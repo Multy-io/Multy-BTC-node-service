@@ -27,18 +27,18 @@ var (
 
 // Multy is a main struct of service
 
-// NodeClient is a main struct of service
-type NodeClient struct {
+// Client is a main struct of service
+type Client struct {
 	Config     *Configuration
 	Instance   *btc.Client
 	GRPCserver *streamer.Server
 	Clients    *map[string]store.AddressExtended // address to userid
-	BtcApi     *gobcy.API
+	BTCApi     *gobcy.API
 }
 
 // Init initializes Multy instance
-func Init(conf *Configuration) (*NodeClient, error) {
-	cli := &NodeClient{
+func Init(conf *Configuration) (*Client, error) {
+	cli := &Client{
 		Config: conf,
 	}
 
@@ -55,7 +55,7 @@ func Init(conf *Configuration) (*NodeClient, error) {
 		Coin:  conf.BTCAPI.Coin,
 		Chain: conf.BTCAPI.Chain,
 	}
-	cli.BtcApi = &api
+	cli.BTCApi = &api
 	log.Debug("btc api initialization done √")
 
 	// initail initialization of clients data
@@ -82,9 +82,9 @@ func Init(conf *Configuration) (*NodeClient, error) {
 	s := grpc.NewServer()
 	srv := streamer.Server{
 		UsersData: cli.Clients,
-		BtcAPI:    cli.BtcApi,
+		BTCApi:    cli.BTCApi,
 		M:         &sync.Mutex{},
-		BtcCli:    btcClient,
+		BTCCli:    btcClient,
 		Info:      &conf.ServiceInfo,
 	}
 

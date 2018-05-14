@@ -8,17 +8,16 @@ import (
 // ProcessTransaction from block
 func (c *Client) blockTransactions(hash *chainhash.Hash) {
 	log.Debugf("New block connected %s", hash.String())
-	// block Height
-
-	blockVerbose, err := c.RpcClient.GetBlockVerbose(hash)
+	// Block Height
+	blockVerbose, err := c.RPCClient.GetBlockVerbose(hash)
 	if err != nil {
 		log.Errorf("parseNewBlock:GetBlockVerbose: %s", err.Error())
 		return
 	}
 	blockHeight := blockVerbose.Height
 
-	//parse all block transactions
-	rawBlock, err := c.RpcClient.GetBlock(hash)
+	// Parse all block transactions
+	rawBlock, err := c.RPCClient.GetBlock(hash)
 	allBlockTransactions, err := rawBlock.TxHashes()
 	if err != nil {
 		log.Errorf("parseNewBlock:rawBlock.TxHashes: %s", err.Error())
@@ -33,9 +32,9 @@ func (c *Client) blockTransactions(hash *chainhash.Hash) {
 
 	for _, txHash := range allBlockTransactions {
 
-		blockTxVerbose, err := c.RpcClient.GetRawTransactionVerbose(&txHash)
+		blockTxVerbose, err := c.RPCClient.GetRawTransactionVerbose(&txHash)
 		if err != nil {
-			log.Errorf("parseNewBlock:RpcClient.GetRawTransactionVerbose: %s", err.Error())
+			log.Errorf("parseNewBlock:RPCClient.GetRawTransactionVerbose: %s", err.Error())
 			continue
 		}
 
