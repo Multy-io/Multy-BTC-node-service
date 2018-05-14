@@ -11,7 +11,7 @@ func (c *Client) mempoolTransaction(inTx *btcjson.TxRawResult) {
 	rec := c.rawTxToMempoolRec(inTx)
 	c.AddToMempool <- pb.MempoolRecord{
 		Category: int32(rec.Category),
-		HashTX:   rec.HashTX,
+		HashTX:   rec.HashTx,
 	}
 
 	// Process tx for tx history and spendable outs

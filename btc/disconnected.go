@@ -1,9 +1,10 @@
+package btc
+
 /*
 Copyright 2018 Idealnaya rabota LLC
 Licensed under Multy.io license.
 See LICENSE for details
 */
-package btc
 
 // import (
 // 	"github.com/Appscrunch/Multy-back/store"

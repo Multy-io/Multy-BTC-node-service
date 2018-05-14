@@ -1,9 +1,10 @@
+package main
+
 /*
 Copyright 2018 Idealnaya rabota LLC
 Licensed under Multy.io license.
 See LICENSE for details
 */
-package main
 
 import (
 	"fmt"
@@ -15,7 +16,6 @@ import (
 	_ "github.com/KristinaEtc/slflog"
 )
 
-//
 var (
 	log = slf.WithContext("main")
 

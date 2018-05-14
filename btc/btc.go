@@ -1,9 +1,10 @@
+package btc
+
 /*
 Copyright 2018 Idealnaya rabota LLC
 Licensed under Multy.io license.
 See LICENSE for details
 */
-package btc
 
 import (
 	"sync"
@@ -12,15 +13,15 @@ import (
 	pb "github.com/Appscrunch/Multy-back/node-streamer/btc"
 	"github.com/Appscrunch/Multy-back/store"
 	"github.com/KristinaEtc/slf"
-	_ "github.com/KristinaEtc/slflog"
 	"github.com/btcsuite/btcd/btcjson"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/rpcclient"
 	"github.com/btcsuite/btcd/wire"
 )
 
+// Client contains all the data
 type Client struct {
-	RpcClient      *rpcclient.Client
+	RPCClient      *rpcclient.Client
 	ResyncCh       chan pb.Resync
 	TransactionsCh chan pb.BTCTransaction
 	AddSpOut       chan pb.AddSpOut
@@ -30,11 +31,12 @@ type Client struct {
 	UsersData      *map[string]store.AddressExtended
 	rpcConf        *rpcclient.ConnConfig
 	UserDataM      *sync.Mutex
-	RpcClientM     *sync.Mutex
+	RPCClientM     *sync.Mutex
 }
 
 var log = slf.WithContext("btc")
 
+// NewClient adds new client
 func NewClient(certFromConf []byte, btcNodeAddress string, usersData *map[string]store.AddressExtended, udm, rpcm *sync.Mutex) (*Client, error) {
 
 	cli := &Client{
@@ -55,7 +57,7 @@ func NewClient(certFromConf []byte, btcNodeAddress string, usersData *map[string
 		},
 		UsersData:  usersData,
 		UserDataM:  udm,
-		RpcClientM: rpcm,
+		RPCClientM: rpcm,
 	}
 
 	log.Infof("cert= %d bytes\n", len(certFromConf))
@@ -64,6 +66,7 @@ func NewClient(certFromConf []byte, btcNodeAddress string, usersData *map[string
 	return cli, nil
 }
 
+// RunProcess interacts with rpc
 func (c *Client) RunProcess(btcNodeAddress string) error {
 	log.Info("Run Process")
 
@@ -98,11 +101,9 @@ func (c *Client) RunProcess(btcNodeAddress string) error {
 		return err
 	}
 	log.Info("NotifyNewTransactions: Registration Complete")
-
-	c.RpcClientM.Lock()
-	c.RpcClient = rpcClient
-	c.RpcClientM.Unlock()
-
-	c.RpcClient.WaitForShutdown()
+	c.RPCClientM.Lock()
+	c.RPCClient = rpcClient
+	c.RPCClientM.Unlock()
+	c.RPCClient.WaitForShutdown()
 	return nil
 }
