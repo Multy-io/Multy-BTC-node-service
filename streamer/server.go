@@ -2,7 +2,10 @@ package streamer
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"net/http"
 	"strconv"
 	"sync"
 	"time"
@@ -145,45 +148,113 @@ func (s *Server) SyncState(ctx context.Context, in *pb.BlockHeight) (*pb.ReplyIn
 
 func (s *Server) EventResyncAddress(c context.Context, address *pb.AddressToResync) (*pb.ReplyInfo, error) {
 	log.Debugf("EventResyncAddress")
-	allResync := []store.ResyncTx{}
-	requestTimes := 0
-	addrInfo, err := s.BtcAPI.GetAddrFull(address.Address, map[string]string{"limit": "50"})
-	if err != nil {
-		return nil, fmt.Errorf("EventResyncAddress: s.BtcAPI.GetAddrFull : %s", err.Error())
-	}
 
-	log.Debugf("EventResyncAddress:s.BtcAPI.GetAddrFull")
-	if addrInfo.FinalNumTX > 50 {
-		requestTimes = int(float64(addrInfo.FinalNumTX) / 50.0)
-	}
-
-	for _, tx := range addrInfo.TXs {
-		allResync = append(allResync, store.ResyncTx{
-			Hash:        tx.Hash,
-			BlockHeight: tx.BlockHeight,
-		})
-	}
-	for i := 0; i < requestTimes; i++ {
-		addrInfo, err := s.BtcAPI.GetAddrFull(address.Address, map[string]string{"limit": "50", "before": strconv.Itoa(allResync[len(allResync)-1].BlockHeight)})
-		if err != nil {
-			return nil, fmt.Errorf("[ERR] EventResyncAddress: s.BtcAPI.GetAddrFull : %s", err.Error())
+	if s.BtcAPI.Chain == "test3" {
+		type respCyberNode struct {
+			Hash        string `json:"hash"`
+			BlockNumber int    `json:"blockNumber"`
 		}
+		allResync := []store.ResyncTx{}
+		page := 0
+		for {
+			url := "http://api.cybersearch.io/bitcoin_testnet/contract/" + address.Address + "/transactions?pageSize=250&page=" + strconv.Itoa(page)
+			req, err := http.NewRequest("GET", url, nil)
+			if err != nil {
+				return &pb.ReplyInfo{
+					Message: fmt.Sprintf("EventResyncAddress: http.NewRequest = %s", err.Error()),
+				}, nil
+			}
+
+			res, err := http.DefaultClient.Do(req)
+			if err != nil {
+				return &pb.ReplyInfo{
+					Message: fmt.Sprintf("EventResyncAddress: http.DefaultClient.Do = %s", err.Error()),
+				}, nil
+			}
+			defer res.Body.Close()
+
+			reTx := []respCyberNode{}
+			body, err := ioutil.ReadAll(res.Body)
+			if err != nil {
+				return &pb.ReplyInfo{
+					Message: fmt.Sprintf("EventResyncAddress: ioutil.ReadAll = %s", err.Error()),
+				}, nil
+			}
+
+			if err := json.Unmarshal(body, &reTx); err != nil {
+				// return &pb.ReplyInfo{
+				// 	Message: fmt.Sprintf("EventResyncAddress: json.Unmarshal = %s", err.Error()),
+				// }, nil
+				break
+			}
+			page++
+
+			for _, tx := range reTx {
+				allResync = append(allResync, store.ResyncTx{
+					Hash:        tx.Hash,
+					BlockHeight: tx.BlockNumber,
+				})
+			}
+
+		}
+
+		log.Debugf("EventResyncAddress %d")
+		reverseResyncTx(allResync)
+
+		log.Debugf("EventResyncAddress:reverseResyncTx %d", len(allResync))
+
+		s.BtcCli.ResyncAddresses(allResync, address)
+
+		return &pb.ReplyInfo{
+			Message: "ok",
+		}, nil
+
+		// for _, hash := range reTx.Result {
+		// 	s.EthCli.ResyncAddress(hash.Hash)
+		// }
+
+	} else {
+		allResync := []store.ResyncTx{}
+		requestTimes := 0
+		addrInfo, err := s.BtcAPI.GetAddrFull(address.Address, map[string]string{"limit": "50"})
+		if err != nil {
+			return nil, fmt.Errorf("EventResyncAddress: s.BtcAPI.GetAddrFull : %s", err.Error())
+		}
+
+		log.Debugf("EventResyncAddress:s.BtcAPI.GetAddrFull")
+		if addrInfo.FinalNumTX > 50 {
+			requestTimes = int(float64(addrInfo.FinalNumTX) / 50.0)
+		}
+
 		for _, tx := range addrInfo.TXs {
 			allResync = append(allResync, store.ResyncTx{
 				Hash:        tx.Hash,
 				BlockHeight: tx.BlockHeight,
 			})
 		}
+		for i := 0; i < requestTimes; i++ {
+			addrInfo, err := s.BtcAPI.GetAddrFull(address.Address, map[string]string{"limit": "50", "before": strconv.Itoa(allResync[len(allResync)-1].BlockHeight)})
+			if err != nil {
+				return nil, fmt.Errorf("[ERR] EventResyncAddress: s.BtcAPI.GetAddrFull : %s", err.Error())
+			}
+			for _, tx := range addrInfo.TXs {
+				allResync = append(allResync, store.ResyncTx{
+					Hash:        tx.Hash,
+					BlockHeight: tx.BlockHeight,
+				})
+			}
+		}
+
+		reverseResyncTx(allResync)
+		log.Debugf("EventResyncAddress:reverseResyncTx %d", len(allResync))
+
+		s.BtcCli.ResyncAddresses(allResync, address)
+
+		return &pb.ReplyInfo{
+			Message: "ok",
+		}, nil
 	}
 
-	reverseResyncTx(allResync)
-	log.Debugf("EventResyncAddress:reverseResyncTx %d", len(allResync))
-
-	s.BtcCli.ResyncAddresses(allResync, address)
-
-	return &pb.ReplyInfo{
-		Message: "ok",
-	}, nil
 }
 
 func (s *Server) EventSendRawTx(c context.Context, tx *pb.RawTx) (*pb.ReplyInfo, error) {
