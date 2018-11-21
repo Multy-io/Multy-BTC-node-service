@@ -18,14 +18,14 @@ RUN apt-get update && \
 RUN cd $GOPATH/src/github.com/Multy-io && \
     git clone https://github.com/Multy-io/Multy-BTC-node-service.git && \
     cd $GOPATH/src/github.com/Multy-io/Multy-BTC-node-service && \
-    git checkout reconnect
+    git checkout release_1.3 
 
 
 RUN cd $GOPATH/src/github.com/Multy-io/Multy-BTC-node-service && \
     go get ./... && \
     make build && \
-    rm -r $GOPATH/src/github.com/Multy-io/Multy-back 
-
+    rm -r $GOPATH/src/github.com/Multy-io/Multy-back && \
+    git checkout master
 
 WORKDIR $GOPATH/src/github.com/Multy-io/Multy-BTC-node-service/cmd
 
