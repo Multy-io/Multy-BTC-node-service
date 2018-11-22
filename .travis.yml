@@ -29,4 +29,3 @@ deploy:
             docker push "$IMAGE:$TRAVIS_TAG"
     on:
       tags: true
-      all_branches: true
