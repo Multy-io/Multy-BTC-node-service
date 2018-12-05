@@ -31,7 +31,7 @@ type Client struct {
 	rpcConf        *rpcclient.ConnConfig
 }
 
-var log = slf.WithContext("btc")
+var log = slf.WithContext("btc").WithCaller(slf.CallerShort)
 
 func NewClient(certFromConf []byte, btcNodeAddress string, usersData *sync.Map) (*Client, error) {
 
