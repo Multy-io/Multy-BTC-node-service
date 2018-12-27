@@ -1,3 +1,6 @@
+# ⚠️ We've moved to monorepo, and this repository is no longer active ⚠️
+please check out https://github.com/multy-io/multy-back for details
+
 ## Multy-BTC-node-service
 
 Service that processes BTC node and sends custom data by gRPC to Multy-Back.
